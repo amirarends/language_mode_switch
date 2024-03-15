@@ -1,6 +1,6 @@
 <?php
 
-defined('TYPO3_MODE') or die();
+defined('TYPO3') or die();
 
 $ll = 'LLL:EXT:language_mode_switch/Resources/Private/Language/locallang_db.xlf:';
 
