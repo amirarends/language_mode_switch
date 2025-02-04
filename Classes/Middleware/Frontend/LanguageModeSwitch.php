@@ -26,8 +26,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Routing\PageArguments;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
@@ -43,10 +45,8 @@ use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
  */
 class LanguageModeSwitch implements MiddlewareInterface
 {
-    /**
-     * @var FrontendInterface
-     */
-    private $cache;
+    private CacheManager $cacheManager;
+    private ConnectionPool $connectionPool;
 
     /**
      * @var bool
@@ -54,21 +54,16 @@ class LanguageModeSwitch implements MiddlewareInterface
     private $enableAutomaticMode;
 
     /**
-     * @var QueryBuilder
-     */
-    private $queryBuilder;
-
-    /**
      * LanguageModeSwitch constructor.
      * @param FrontendInterface $cache
      * @param QueryBuilder $queryBuilder
      * @param ExtensionConfiguration $extensionConfiguration
      */
-    public function __construct(FrontendInterface $cache, QueryBuilder $queryBuilder, ExtensionConfiguration $extensionConfiguration)
+    public function __construct(CacheManager $cacheManager, ConnectionPool $connectionPool, ExtensionConfiguration $extensionConfiguration)
     {
-        $this->cache = $cache;
+        $this->cacheManager = $cacheManager;
+        $this->connectionPool = $connectionPool;
         $this->enableAutomaticMode = (bool)($extensionConfiguration->get('language_mode_switch')['automaticMode'] ?? false);
-        $this->queryBuilder = $queryBuilder;
     }
 
     /**
@@ -97,8 +92,9 @@ class LanguageModeSwitch implements MiddlewareInterface
         }
 
         $cacheKey = 'customTranslationMode_' . $pageArguments->getPageId() . '_' . $siteLanguage->getLanguageId();
-        if ($this->cache->has($cacheKey)) {
-            return $this->cache->get($cacheKey);
+        $cache = $this->getCache();
+        if ($cache->has($cacheKey)) {
+            return $cache->get($cacheKey);
         }
 
         $mode = $this->loadModeFromPageProperties($pageArguments->getPageId(), $siteLanguage->getLanguageId());
@@ -110,13 +106,13 @@ class LanguageModeSwitch implements MiddlewareInterface
             }
         }
 
-        $this->cache->set($cacheKey, $mode, ['pageId_' . $pageArguments->getPageId()]);
+        $cache->set($cacheKey, $mode, ['pageId_' . $pageArguments->getPageId()]);
         return $mode;
     }
 
     private function loadModeFromPageProperties(int $pageId, int $languageId): string
     {
-        $queryBuilder = clone $this->queryBuilder;
+        $queryBuilder = $this->getQueryBuilder();
         $queryBuilder->select('l10n_mode');
         $queryBuilder->from('pages');
         $queryBuilder->where(
@@ -158,7 +154,7 @@ class LanguageModeSwitch implements MiddlewareInterface
 
     private function pageHasStandAloneContent(int $pageId, int $languageId): bool
     {
-        $queryBuilder = clone $this->queryBuilder;
+        $queryBuilder = $this->getQueryBuilder();
         $queryBuilder->select('uid');
         $queryBuilder->from('tt_content');
         $queryBuilder->where(
@@ -177,5 +173,15 @@ class LanguageModeSwitch implements MiddlewareInterface
         );
         $queryBuilder->setMaxResults(1);
         return (bool)$queryBuilder->execute()->fetchOne();
+    }
+
+    private function getCache(): FrontendInterface
+    {
+        return $this->cacheManager->getCache('pages');
+    }
+
+    private function getQueryBuilder(): QueryBuilder
+    {
+        return $this->connectionPool->getQueryBuilderForTable('pages');
     }
 }
