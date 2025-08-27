@@ -29,6 +29,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Routing\PageArguments;
@@ -118,14 +119,14 @@ class LanguageModeSwitch implements MiddlewareInterface
         $queryBuilder->where(
             $queryBuilder->expr()->eq(
                 'l10n_parent',
-                $queryBuilder->createNamedParameter($pageId, \PDO::PARAM_INT)
+                $queryBuilder->createNamedParameter($pageId, Connection::PARAM_INT)
             ),
             $queryBuilder->expr()->eq(
                 'sys_language_uid',
-                $queryBuilder->createNamedParameter($languageId, \PDO::PARAM_INT)
+                $queryBuilder->createNamedParameter($languageId, Connection::PARAM_INT)
             )
         );
-        return $queryBuilder->execute()->fetchOne();
+        return $queryBuilder->executeQuery()->fetchOne();
     }
 
     private function missesRequirements(
@@ -160,19 +161,19 @@ class LanguageModeSwitch implements MiddlewareInterface
         $queryBuilder->where(
             $queryBuilder->expr()->eq(
                 'pid',
-                $queryBuilder->createNamedParameter($pageId, \PDO::PARAM_INT)
+                $queryBuilder->createNamedParameter($pageId, Connection::PARAM_INT)
             ),
             $queryBuilder->expr()->eq(
                 'l18n_parent',
-                $queryBuilder->createNamedParameter(0, \PDO::PARAM_INT)
+                $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)
             ),
             $queryBuilder->expr()->eq(
                 'sys_language_uid',
-                $queryBuilder->createNamedParameter($languageId)
+                $queryBuilder->createNamedParameter($languageId, Connection::PARAM_INT)
             )
         );
         $queryBuilder->setMaxResults(1);
-        return (bool)$queryBuilder->execute()->fetchOne();
+        return (bool)$queryBuilder->executeQuery()->fetchOne();
     }
 
     private function getCache(): FrontendInterface
