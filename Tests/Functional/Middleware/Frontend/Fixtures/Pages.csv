@@ -1,0 +1,7 @@
+"pages"
+,"uid","pid","sys_language_uid","l10n_parent","title","l10n_mode"
+,"1","0","0","0","Root page",""
+,"2","0","1","1","Root page DE","strict"
+,"3","0","2","1","Root page FR",""
+,"4","0","0","0","Second page",""
+,"5","0","1","4","Second page DE",""
