@@ -1,8 +1,12 @@
 <?php
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
 $ll = 'LLL:EXT:language_mode_switch/Resources/Private/Language/locallang_db.xlf:';
 
-$extensionConfiguration = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)
+$extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)
     ->get('language_mode_switch');
 
 $defaultLabel = $ll . 'pages.l10n_mode.default';
@@ -23,20 +27,21 @@ $additionalPagesColumns = [
             'type' => 'select',
             'renderType' => 'selectSingle',
             'items' => [
-                [$defaultLabel, ''],
-                [$ll . 'pages.l10n_mode.strict', 'strict'],
-                [$ll . 'pages.l10n_mode.fallback', 'fallback'],
-                [$ll . 'pages.l10n_mode.free', 'free'],
+                ['label' => $defaultLabel, 'value' => ''],
+                ['label' => $ll . 'pages.l10n_mode.strict', 'value' => 'strict'],
+                ['label' => $ll . 'pages.l10n_mode.fallback', 'value' => 'fallback'],
+                ['label' => $ll . 'pages.l10n_mode.free', 'value' => 'free'],
             ],
         ],
     ],
 ];
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns(
+ExtensionManagementUtility::addTCAcolumns(
     'pages',
     $additionalPagesColumns
 );
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+
+ExtensionManagementUtility::addToAllTCAtypes(
     'pages',
     'l10n_mode',
     '',
