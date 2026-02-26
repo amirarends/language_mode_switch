@@ -56,22 +56,17 @@ class LanguageModeSwitch implements MiddlewareInterface
 
     /**
      * LanguageModeSwitch constructor.
-     * @param FrontendInterface $cache
-     * @param QueryBuilder $queryBuilder
-     * @param ExtensionConfiguration $extensionConfiguration
      */
-    public function __construct(CacheManager $cacheManager, ConnectionPool $connectionPool, ExtensionConfiguration $extensionConfiguration)
-    {
+    public function __construct(
+        CacheManager $cacheManager,
+        ConnectionPool $connectionPool,
+        ExtensionConfiguration $extensionConfiguration,
+    ) {
         $this->cacheManager = $cacheManager;
         $this->connectionPool = $connectionPool;
         $this->enableAutomaticMode = (bool)($extensionConfiguration->get('language_mode_switch')['automaticMode'] ?? false);
     }
 
-    /**
-     * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
-     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $pageArguments = $request->getAttribute('routing', null);
@@ -86,7 +81,7 @@ class LanguageModeSwitch implements MiddlewareInterface
 
     private function getPageDefinedCustomMode(
         ?PageArguments $pageArguments,
-        ?SiteLanguage $siteLanguage
+        ?SiteLanguage $siteLanguage,
     ): string {
         if ($this->missesRequirements($pageArguments, $siteLanguage)) {
             return '';
@@ -102,9 +97,9 @@ class LanguageModeSwitch implements MiddlewareInterface
         if ($mode === '' && $this->enableAutomaticMode) {
             if ($this->pageHasStandAloneContent($pageArguments->getPageId(), $siteLanguage->getLanguageId())) {
                 return 'free';
-            } else {
-                return 'fallback';
             }
+            return 'fallback';
+
         }
 
         $cache->set($cacheKey, $mode, ['pageId_' . $pageArguments->getPageId()]);
@@ -131,21 +126,21 @@ class LanguageModeSwitch implements MiddlewareInterface
 
     private function missesRequirements(
         ?PageArguments $pageArguments,
-        ?SiteLanguage $siteLanguage
+        ?SiteLanguage $siteLanguage,
     ): bool {
-        return $pageArguments === null
-            || $siteLanguage === null
+        return !$pageArguments instanceof PageArguments
+            || !$siteLanguage instanceof SiteLanguage
             || $siteLanguage->getLanguageId() <= 0
-            ;
+        ;
     }
 
     private function getNewLanguageWithMode(
         SiteLanguage $language,
-        string $mode
+        string $mode,
     ): SiteLanguage {
         return new SiteLanguage(
             $language->getLanguageId(),
-            $language->getLocale(),
+            (string)$language->getLocale(),
             $language->getBase(),
             array_merge($language->toArray(), [
                 'fallbackType' => $mode,
